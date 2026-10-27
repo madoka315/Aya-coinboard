@@ -60,6 +60,11 @@ async def _settle(gid, uid, score):
         hoshino.logger.exception(f'coinboard 金币结算失败 gid={gid} uid={uid}')
 
 
+def schedule_settle(gid, uid, score):
+    """调度一次延迟金币结算；供 hook_method 及自定义钩子（如宝可梦的实例级 patch）使用"""
+    asyncio.ensure_future(_settle(gid, uid, score))
+
+
 def hook_method(cls, method_name, score_func):
     """把 cls.<method_name>(self, gid, uid) 包上发币逻辑。
 
@@ -71,7 +76,7 @@ def hook_method(cls, method_name, score_func):
     def patched(instance, gid, uid):
         result = orig(instance, gid, uid)
         try:
-            asyncio.ensure_future(_settle(gid, uid, score_func()))
+            schedule_settle(gid, uid, score_func())
         except Exception:
             hoshino.logger.exception('coinboard 金币结算调度失败')
         return result

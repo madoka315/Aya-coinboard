@@ -23,7 +23,8 @@ modules/coinboard/
 │                             ScoreCounter2 获取/兜底、延迟结算、hook_method()
 ├── hook_pcravatarguess.py    猜头像   → patch WinningCounter._record_winning
 ├── hook_pcrfullcardguess.py  猜立绘   → patch WinningCounter._record_winning
-└── hook_voiceguess.py        猜语音   → patch Dao.record_winning
+├── hook_voiceguess.py        猜语音   → patch Dao.record_winning
+└── hook_pokemanpcr2.py       宝可梦   → patch daily_limiter.increase（实例级，不用 hook_method）
 ```
 
  `_coin_core.py` 顶部的 `SETTLE_DELAY`（默认 2.0 秒）控制延迟，**避免毫秒级连发触发 QQ 风控**，可按体感自行调整。
