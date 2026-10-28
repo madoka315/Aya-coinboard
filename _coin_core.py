@@ -14,38 +14,42 @@ from nonebot import MessageSegment
 SETTLE_DELAY = 2.0
 
 try:
-    from hoshino.modules.priconne.pcr_duel import ScoreCounter2
+    from hoshino.modules.pcr_duel import ScoreCounter2
 except ImportError:
-    # pcr_duel 不存在时的内置等价实现（同库同表，单独安装 coinboard 也可用）
-    _DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
+    try:
+        # 兼容旧版：pcr_duel 尚作为 priconne 子包安装时的路径
+        from hoshino.modules.priconne.pcr_duel import ScoreCounter2
+    except ImportError:
+            # pcr_duel 不存在时的内置等价实现（同库同表，单独安装 coinboard 也可用）
+        _DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
 
-    class ScoreCounter2:
-        def __init__(self):
-            os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
-            self._connect().execute('''CREATE TABLE IF NOT EXISTS SCORECOUNTER
-                          (GID             INT    NOT NULL,
-                           UID             INT    NOT NULL,
-                           SCORE           INT    NOT NULL,
-                           PRIMARY KEY(GID, UID));''')
+        class ScoreCounter2:
+            def __init__(self):
+                os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
+                self._connect().execute('''CREATE TABLE IF NOT EXISTS SCORECOUNTER
+                              (GID             INT    NOT NULL,
+                               UID             INT    NOT NULL,
+                               SCORE           INT    NOT NULL,
+                               PRIMARY KEY(GID, UID));''')
 
-        def _connect(self):
-            return sqlite3.connect(_DB_PATH)
+            def _connect(self):
+                return sqlite3.connect(_DB_PATH)
 
-        def _get_score(self, gid, uid):
-            r = self._connect().execute("SELECT SCORE FROM SCORECOUNTER WHERE GID=? AND UID=?", (gid, uid)).fetchone()
-            return 0 if r is None else r[0]
+            def _get_score(self, gid, uid):
+                r = self._connect().execute("SELECT SCORE FROM SCORECOUNTER WHERE GID=? AND UID=?", (gid, uid)).fetchone()
+                return 0 if r is None else r[0]
 
-        def _add_score(self, gid, uid, score):
-            conn = self._connect()
-            conn.execute("INSERT OR REPLACE INTO SCORECOUNTER (GID,UID,SCORE) \
-                                VALUES (?,?,?)", (gid, uid, self._get_score(gid, uid) + score))
-            conn.commit()
+            def _add_score(self, gid, uid, score):
+                conn = self._connect()
+                conn.execute("INSERT OR REPLACE INTO SCORECOUNTER (GID,UID,SCORE) \
+                                    VALUES (?,?,?)", (gid, uid, self._get_score(gid, uid) + score))
+                conn.commit()
 
-        def _reduce_score(self, gid, uid, score):
-            conn = self._connect()
-            conn.execute("INSERT OR REPLACE INTO SCORECOUNTER (GID,UID,SCORE) \
-                                VALUES (?,?,?)", (gid, uid, max(0, self._get_score(gid, uid) - score)))
-            conn.commit()
+            def _reduce_score(self, gid, uid, score):
+                conn = self._connect()
+                conn.execute("INSERT OR REPLACE INTO SCORECOUNTER (GID,UID,SCORE) \
+                                    VALUES (?,?,?)", (gid, uid, max(0, self._get_score(gid, uid) - score)))
+                conn.commit()
 
 
 async def _settle(gid, uid, score):
